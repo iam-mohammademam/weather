@@ -7,33 +7,69 @@ import { FaSearch } from "react-icons/fa";
 import { VscSend } from "react-icons/vsc";
 
 const App = () => {
-  const [inputValue, setInputValue] = useState("dhaka");
-
+  const [inputValue, setInputValue] = useState("");
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(null);
   const [error, setError] = useState(null);
+  const [ipAddress, setIpAddress] = useState("");
+  const [ipLocation, setIpLocation] = useState("second");
+
   const baseUrl = import.meta.env.VITE_API_URL;
 
-  const getWeatherInfo = async () => {
+  const getWeatherInfo = async (location) => {
+    if (!location) {
+      return;
+    }
     setLoading(true);
     try {
       const res = await axios.get(
-        `${baseUrl}/weather?q=${inputValue}&units=metric&appid=51c1b9373eaf6c25c3152773a88b8c25`
+        `${baseUrl}/weather?q=${location}&units=metric&appid=${
+          import.meta.env.VITE_APP_ID
+        }`
       );
       setData(res.data);
     } catch (error) {
-      console.error(error);
       setError(error);
     } finally {
       setLoading(false);
     }
   };
+  // get user ip address
   useEffect(() => {
-    if (!baseUrl) {
-      return console.log("Invalid api url.");
-    }
-    getWeatherInfo();
+    const getIpAddress = async () => {
+      setLoading(true);
+      try {
+        const res = await axios.get("https://api.ipify.org");
+        setIpAddress(res?.data);
+      } catch (error) {
+        setError(error);
+      }
+    };
+    getIpAddress();
   }, []);
+  // get user location
+  useEffect(() => {
+    if (ipAddress) {
+      const getIpLocation = async () => {
+        setLoading(true);
+        try {
+          const res = await axios.get(`http://ip-api.com/json/${ipAddress}`);
+          setIpLocation(res?.data?.city);
+        } catch (error) {
+          setError(error);
+        }
+      };
+      getIpLocation();
+    }
+  }, [ipAddress]);
+  // get weather information
+  useEffect(() => {
+    if (ipLocation === "second" || !ipLocation) {
+      return;
+    } else {
+      getWeatherInfo(ipLocation);
+    }
+  }, [ipLocation]);
 
   const timestamp = data?.sys?.sunset * 1000; // Convert to milliseconds
   const options = { hour: "numeric", minute: "numeric", hour12: true };
@@ -41,8 +77,8 @@ const App = () => {
 
   return (
     <>
-      <main className="min-h-screen w-full flex items-center justify-center flex-col ">
-        <div className="flex gap-x-7 items-center">
+      <main className="min-h-screen w-full flex flex-col items-center justify-center px-[5%]">
+        <div className="flex gap-x-7 items-center flex-col sm:flex-row gap-y-6">
           <div className="flex flex-col gap-y-5">
             {/* search bar */}
             <div className="flex items-center gap-5">
@@ -52,27 +88,31 @@ const App = () => {
                 placeholder="Search by city name"
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    getWeatherInfo();
+                  if (e.key === "Enter" && inputValue) {
+                    getWeatherInfo(inputValue);
                   }
                 }}
               />
               <button
-                onClick={getWeatherInfo}
-                className="h-full font-medium rounded-sm outline-none text- text-xl"
+                onClick={() => {
+                  if (inputValue) {
+                    getWeatherInfo(inputValue);
+                  }
+                }}
+                className="p-2 font-medium rounded-sm outline-none hover:opacity-80 text-xl"
               >
                 <FaSearch />
               </button>
             </div>
-            {!loading && data && <WeatherCard data={data} />}
+            {!loading && !error && data && (
+              <WeatherCard data={data} city={data?.name || ipLocation} />
+            )}
             {/* weather details */}
           </div>
           {/* Highlights */}
-          {!loading && data && (
+          {!loading && !error && data && (
             <div className="flex flex-col">
-              <h1 className="font-medium text-lg mb-5">
-                Today&apos;s Highlights
-              </h1>
+              <h1 className="font-medium text-lg mb-5">Highlights</h1>
               <div className="grid grid-cols-2 gap-5 w-fit">
                 <div className="px-5 py-3 rounded-md bg-gray-300/30 flex items-center flex-col gap-y-1">
                   <h1 className="font-medium text-md capitalize">Wind speed</h1>
@@ -112,7 +152,7 @@ const App = () => {
                   </span>
                 </div>
                 <div className="px-5 py-3 rounded-md bg-gray-300/30 flex items-center justify-between flex-col gap-y-1 w-[120px]">
-                  <h1 className="font-medium text-md capitalize">
+                  <h1 className="font-medium text-md capitalize whitespace-nowrap">
                     air pressure
                   </h1>
                   <span className="flex items-center gap-1">
@@ -126,7 +166,7 @@ const App = () => {
             </div>
           )}
         </div>
-        {loading && (
+        {loading ? (
           <>
             <div className="mt-10">
               <iframe
@@ -139,6 +179,18 @@ const App = () => {
               ></iframe>
             </div>
           </>
+        ) : (
+          error && (
+            <>
+              <div className="flex items-center justify-center flex-col mt-10">
+                <h1 className="font-medium text-lg">
+                  Didn&apos;t find any result for{" "}
+                  <span className="underline">{inputValue}</span>.
+                </h1>
+                <small className="font-medium mt-3">Try something else .</small>
+              </div>
+            </>
+          )
         )}
       </main>
     </>

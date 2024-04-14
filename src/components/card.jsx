@@ -6,7 +6,7 @@ import { LuCloudRainWind } from "react-icons/lu";
 import { BsCloudFog2 } from "react-icons/bs";
 import { WiDaySunny } from "react-icons/wi";
 
-const Card = ({ data }) => {
+const Card = ({ data, city }) => {
   const [cloudIcon, setCloudIcon] = useState();
 
   useEffect(() => {
@@ -38,7 +38,7 @@ const Card = ({ data }) => {
   return (
     <>
       <div className="flex flex-col items-center justify-center gap-y-2 bg-gray-300/30 rounded-md py-8 backdrop-blur-[2px] shadow-sm">
-        {/* <h1 className="font-semibold text-lg capitalize">{inputValue}</h1> */}
+        <h1 className="font-semibold text-lg capitalize">{city}</h1>
         {cloudIcon}
         <div className="font-medium text-4xl relative">
           {Math.floor(data?.main?.temp)}
