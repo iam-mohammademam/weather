@@ -34,7 +34,7 @@ const Card = ({ data, isNight, locationTime }) => {
       <div
         className={`flex flex-col items-center justify-center gap-y-2 ${
           isNight ? "bg-slate-500/20" : "bg-gray-300/50"
-        } rounded-md py-8 backdrop-blur-[2px] shadow-sm`}
+        } rounded-md py-8 backdrop-blur-[2px] shadow-sm w-full `}
       >
         <h1 className="font-semibold text-lg capitalize">{data?.name}</h1>
         {cloudIcon}

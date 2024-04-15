@@ -100,18 +100,18 @@ const App = () => {
   return (
     <>
       <main
-        className={`min-h-screen w-full flex flex-col items-center justify-center px-[10%] ${
+        className={`min-h-screen w-full flex flex-col items-center justify-center px-[10%] overflow-hidden ${
           isNight ? "bg-black text-white" : ""
         }`}
       >
-        <div className="flex gap-x-7 items-center flex-col sm:flex-row gap-y-6">
-          <div className="flex flex-col gap-y-5">
+        <div className="flex gap-x-7 items-center flex-col sm:flex-row  overflow-hidden gap-y-6">
+          <div className="flex flex-col gap-y-5 w-full">
             {/* search bar */}
             <div className="flex items-center gap-5">
               <input
-                className={`"w-full h-12 ${
+                className={`w-full h-12 ${
                   isNight ? "bg-slate-500/20" : "bg-gray-300/50"
-                } px-3 rounded-l-sm text-md outline-none "`}
+                } px-3 rounded-l-sm text-md outline-none`}
                 value={inputValue}
                 placeholder="Search by city name"
                 onChange={(e) => setInputValue(e.target.value)}
@@ -127,7 +127,7 @@ const App = () => {
                     getWeatherInfo(inputValue);
                   }
                 }}
-                className="p-2 font-medium rounded-sm outline-none hover:opacity-80 text-xl"
+                className="p-2 font-medium rounded-sm outline-none hover:opacity-80 text-xl w-fit shrink-0"
               >
                 <FaSearch />
               </button>
@@ -141,16 +141,17 @@ const App = () => {
             )}
             {/* weather details */}
           </div>
+
           {/* Highlights */}
           {!loading && !error && data && (
-            <div className="flex flex-col">
-              <h1 className="font-medium text-lg mb-5">Highlights</h1>
-              <div className="grid grid-cols-2 gap-5 w-fit">
+            <div className="flex flex-col w-full items-center justify-center overflow-hidden">
+              <h1 className="font-medium text-lg mb-5 mr-auto">Highlights</h1>
+              <div className="grid grid-cols-2 gap-5 w-full">
                 {/* wind speed */}
                 <div
                   className={`px-5 py-3 rounded-md shrink-0 ${
                     isNight ? "bg-slate-500/20" : "bg-gray-300/50"
-                  } flex items-center flex-col gap-y-1`}
+                  } flex items-center flex-col gap-y-1 backdrop-blur-[2px]`}
                 >
                   <h1 className="font-medium text-md capitalize">Wind speed</h1>
                   <span className="flex items-center gap-1">
@@ -166,9 +167,9 @@ const App = () => {
                 </div>
                 {/* humidity */}
                 <div
-                  className={`px-5 py-3 rounded-md shrink-0 ${
+                  className={`w-full px-5 py-3 rounded-md  ${
                     isNight ? "bg-slate-500/20" : "bg-gray-300/50"
-                  } flex items-center justify-between flex-col gap-y-1 w-[120px]`}
+                  } flex items-center justify-between flex-col gap-y-1 backdrop-blur-[2px]`}
                 >
                   <h1 className="font-medium text-md capitalize">Humidity</h1>
                   <span className="flex items-center gap-1">
@@ -185,9 +186,9 @@ const App = () => {
                 </div>
                 {/* sunset & sunrise */}
                 <div
-                  className={`px-5 py-4 rounded-md shrink-0 ${
+                  className={`w-full rounded-md px-5 py-3 backdrop-blur-[2px]  ${
                     isNight ? "bg-slate-500/20" : "bg-gray-300/50"
-                  } flex items-center justify-between flex-col gap-y-1 w-[120px] `}
+                  } flex items-center justify-between flex-col gap-y-1`}
                 >
                   <h1 className="font-medium text-md capitalize">
                     {isSunset ? "sunrise" : "sunset"}
@@ -200,9 +201,9 @@ const App = () => {
                 </div>
                 {/* air pressure */}
                 <div
-                  className={`px-5 py-4 rounded-md shrink-0 ${
+                  className={`w-full rounded-md px-5 py-3 backdrop-blur-[2px] shrink-0 ${
                     isNight ? "bg-slate-500/20" : "bg-gray-300/50"
-                  } flex items-center justify-between flex-col gap-y-1 w-[120px]`}
+                  } flex items-center justify-between flex-col gap-y-1`}
                 >
                   <h1 className="font-medium text-md capitalize whitespace-nowrap">
                     air pressure
