@@ -1,20 +1,26 @@
-/* eslint-disable no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
 import WeatherCard from "./components/card";
 import axios from "axios";
 import { FaSearch } from "react-icons/fa";
 import { VscSend } from "react-icons/vsc";
+import { getCurrentTime } from "./getCurrentTime";
+import { getSunTime } from "./components/getSunTime";
+
+const baseUrl = import.meta.env.VITE_API_URL;
 
 const App = () => {
   const [inputValue, setInputValue] = useState("");
+
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(null);
   const [error, setError] = useState(null);
-  const [ipAddress, setIpAddress] = useState("");
-  const [ipLocation, setIpLocation] = useState("second");
-
-  const baseUrl = import.meta.env.VITE_API_URL;
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
+  const [isNight, setIsNight] = useState(false);
+  const [locationTime, setLocationTime] = useState(null);
+  const [isSunset, setIsSunset] = useState(false);
+  const [sunTime, setSunTime] = useState("");
 
   const getWeatherInfo = async (location) => {
     if (!location) {
@@ -27,6 +33,7 @@ const App = () => {
           import.meta.env.VITE_APP_ID
         }`
       );
+      setError(null);
       setData(res.data);
     } catch (error) {
       setError(error);
@@ -34,56 +41,77 @@ const App = () => {
       setLoading(false);
     }
   };
-  // get user ip address
+
   useEffect(() => {
-    const getIpAddress = async () => {
-      setLoading(true);
-      try {
-        const res = await axios.get("https://api.ipify.org");
-        setIpAddress(res?.data);
-      } catch (error) {
-        setError(error);
-      }
-    };
-    getIpAddress();
+    navigator.geolocation.getCurrentPosition((position) => {
+      setLatitude(position.coords.latitude);
+      setLongitude(position.coords.longitude);
+    });
+    if (new Date().getHours() >= 19 || new Date().getHours() <= 7) {
+      setIsNight(true);
+    } else {
+      setIsNight(false);
+    }
   }, []);
-  // get user location
+  // get user weather information
   useEffect(() => {
-    if (ipAddress) {
-      const getIpLocation = async () => {
-        setLoading(true);
+    if (latitude && longitude) {
+      const getUserLocationWeather = async () => {
         try {
-          const res = await axios.get(`http://ip-api.com/json/${ipAddress}`);
-          setIpLocation(res?.data?.city);
+          const res = await axios.get(
+            `${baseUrl}/weather?lat=${latitude}&lon=${longitude}&units=metric&appid=${
+              import.meta.env.VITE_APP_ID
+            }`
+          );
+          setError(null);
+          setData(res.data);
         } catch (error) {
+          console.log(error);
           setError(error);
         }
       };
-      getIpLocation();
-    }
-  }, [ipAddress]);
-  // get weather information
-  useEffect(() => {
-    if (ipLocation === "second" || !ipLocation) {
-      return;
+      getUserLocationWeather();
     } else {
-      getWeatherInfo(ipLocation);
+      getWeatherInfo("dhaka");
     }
-  }, [ipLocation]);
+  }, [latitude, longitude]);
 
-  const timestamp = data?.sys?.sunset * 1000; // Convert to milliseconds
-  const options = { hour: "numeric", minute: "numeric", hour12: true };
-  const sunset = new Date(timestamp).toLocaleTimeString(undefined, options);
+  useEffect(() => {
+    // get current time with timezone
+    const getTime = getCurrentTime(data?.sys?.country);
+    setLocationTime(getTime.time);
+    if (getTime.hour >= 19 || getTime.hour <= 6) {
+      const formattedDate = getSunTime(data?.sys?.sunrise, data?.sys?.country);
+      setSunTime(formattedDate.time);
+      setIsSunset(true);
+    } else {
+      const formattedDate = getSunTime(data?.sys?.sunset, data?.sys?.country);
+      setSunTime(formattedDate.time);
+      setIsSunset(false);
+    }
+    // set humidity percentage
+    const humidity = document.querySelector(".humidity");
+    if (data && humidity) {
+      humidity.style.width = data?.main?.humidity + "%";
+    }
+  }, [data]);
 
+  // console.log(data);
   return (
     <>
-      <main className="min-h-screen w-full flex flex-col items-center justify-center px-[5%]">
+      <main
+        className={`min-h-screen w-full flex flex-col items-center justify-center px-[10%] ${
+          isNight ? "bg-black text-white" : ""
+        }`}
+      >
         <div className="flex gap-x-7 items-center flex-col sm:flex-row gap-y-6">
           <div className="flex flex-col gap-y-5">
             {/* search bar */}
             <div className="flex items-center gap-5">
               <input
-                className="w-full h-12 bg-gray-300/50 px-3 rounded-l-sm text-md outline-none "
+                className={`"w-full h-12 ${
+                  isNight ? "bg-slate-500/20" : "bg-gray-300/50"
+                } px-3 rounded-l-sm text-md outline-none "`}
                 value={inputValue}
                 placeholder="Search by city name"
                 onChange={(e) => setInputValue(e.target.value)}
@@ -105,7 +133,11 @@ const App = () => {
               </button>
             </div>
             {!loading && !error && data && (
-              <WeatherCard data={data} city={data?.name || ipLocation} />
+              <WeatherCard
+                data={data}
+                locationTime={locationTime}
+                isNight={isNight}
+              />
             )}
             {/* weather details */}
           </div>
@@ -114,7 +146,12 @@ const App = () => {
             <div className="flex flex-col">
               <h1 className="font-medium text-lg mb-5">Highlights</h1>
               <div className="grid grid-cols-2 gap-5 w-fit">
-                <div className="px-5 py-3 rounded-md bg-gray-300/30 flex items-center flex-col gap-y-1">
+                {/* wind speed */}
+                <div
+                  className={`px-5 py-3 rounded-md shrink-0 ${
+                    isNight ? "bg-slate-500/20" : "bg-gray-300/50"
+                  } flex items-center flex-col gap-y-1`}
+                >
                   <h1 className="font-medium text-md capitalize">Wind speed</h1>
                   <span className="flex items-center gap-1">
                     <span className="text-2xl font-semibold ">
@@ -127,8 +164,12 @@ const App = () => {
                     <VscSend className="text-lg" />N
                   </span>
                 </div>
-
-                <div className="px-5 py-3 rounded-md bg-gray-300/30 flex items-center justify-between flex-col gap-y-1 w-[120px]">
+                {/* humidity */}
+                <div
+                  className={`px-5 py-3 rounded-md shrink-0 ${
+                    isNight ? "bg-slate-500/20" : "bg-gray-300/50"
+                  } flex items-center justify-between flex-col gap-y-1 w-[120px]`}
+                >
                   <h1 className="font-medium text-md capitalize">Humidity</h1>
                   <span className="flex items-center gap-1">
                     <span className="text-3xl font-bold ">
@@ -138,20 +179,31 @@ const App = () => {
                   </span>
                   <div className="h-3 rounded-3xl w-full bg-gray-500/50 flex items-center justify-center overflow-hidden relative">
                     <div
-                      className={`absolute range h-full bg-blue-600 rounded-3xl top-0 left-0`}
+                      className={`absolute h-full humidity bg-amber-400 rounded-3xl top-0 left-0`}
                     ></div>
                   </div>
                 </div>
-
-                <div className="px-5 py-3 rounded-md bg-gray-300/30 flex items-center justify-between flex-col gap-y-1 w-[120px]">
-                  <h1 className="font-medium text-md capitalize">sunset</h1>
+                {/* sunset & sunrise */}
+                <div
+                  className={`px-5 py-4 rounded-md shrink-0 ${
+                    isNight ? "bg-slate-500/20" : "bg-gray-300/50"
+                  } flex items-center justify-between flex-col gap-y-1 w-[120px] `}
+                >
+                  <h1 className="font-medium text-md capitalize">
+                    {isSunset ? "sunrise" : "sunset"}
+                  </h1>
                   <span className="flex items-center gap-1">
                     <span className="text-2xl font-semibold whitespace-nowrap ">
-                      {sunset}
+                      {sunTime > 12 ? sunTime - 12 : sunTime}
                     </span>
                   </span>
                 </div>
-                <div className="px-5 py-3 rounded-md bg-gray-300/30 flex items-center justify-between flex-col gap-y-1 w-[120px]">
+                {/* air pressure */}
+                <div
+                  className={`px-5 py-4 rounded-md shrink-0 ${
+                    isNight ? "bg-slate-500/20" : "bg-gray-300/50"
+                  } flex items-center justify-between flex-col gap-y-1 w-[120px]`}
+                >
                   <h1 className="font-medium text-md capitalize whitespace-nowrap">
                     air pressure
                   </h1>
@@ -159,7 +211,7 @@ const App = () => {
                     <span className="text-3xl font-bold ">
                       {data?.main?.pressure}
                     </span>
-                    <sub className="font-semibold text-lg">mb</sub>
+                    <sub className="font-semibold text-lg">hPa</sub>
                   </span>
                 </div>
               </div>
